@@ -5,8 +5,8 @@
 
 planck.testbed('Car', function (testbed) {
 
-    testbed.speed = 5;
-    testbed.hz = 60;
+    testbed.speed = 10;
+    testbed.hz = 5;
 
     const pl = planck, Vec2 = pl.Vec2;
     const world = new pl.World({
@@ -68,8 +68,8 @@ planck.testbed('Car', function (testbed) {
 
     // Elastic
     const elasticPart = {
-        width: 0.175,
-        thickness: 0.0625,
+        width: 0.7,
+        thickness: 0.125,
         getLeft: i => {
             return elastic.left + elasticPart.width * (i + 1);
         }
@@ -77,7 +77,7 @@ planck.testbed('Car', function (testbed) {
     const elastic = {
         partCount: (walls.right - walls.left) / elasticPart.width - 1,
         left: walls.left,
-        top: -10.0,
+        top: -20.0,
     };
     drawElastic = _ => {
         let prevBody = table;
