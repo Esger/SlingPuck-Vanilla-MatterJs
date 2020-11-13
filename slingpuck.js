@@ -37,72 +37,65 @@ planck.testbed('Car', function (testbed) {
     };
 
     // Walls
-    line(walls.left, walls.bottom, walls.right, walls.bottom);
-    line(walls.right, walls.bottom, walls.right, walls.top);
-    line(walls.right, walls.top, walls.left, walls.top);
-    line(walls.left, walls.top, walls.left, walls.bottom);
-    line(walls.left, walls.gateTop, walls.openingLeft, walls.gateTop);
-    line(walls.openingRight, walls.gateTop, walls.right, walls.gateTop);
+    const drawWals = _ => {
+        line(walls.left, walls.bottom, walls.right, walls.bottom);
+        line(walls.right, walls.bottom, walls.right, walls.top);
+        line(walls.right, walls.top, walls.left, walls.top);
+        line(walls.left, walls.top, walls.left, walls.bottom);
+        line(walls.left, walls.gateTop, walls.openingLeft, walls.gateTop);
+        line(walls.openingRight, walls.gateTop, walls.right, walls.gateTop);
+    };
+    drawWals();
 
     // Puck
     const puckOptions = {
         density: 0.1,
-        friction: 0.9
+        friction: 0.9,
+        puckSize: 3.0
     };
-    const puckSize = 3.0;
     const tableFriction = 0.03;
     const puck = world.createBody({
         type: 'dynamic',
         angularDamping: 5,
-        // bullet: true,
+        bullet: true,
         position: Vec2(1.0, 0.4),
         linearDamping: tableFriction
     });
-    puck.createFixture(pl.Circle(puckSize), puckOptions);
-
-    // Elastics
-    const elasticPartWidth = 1.0;
-    const elasticPartThickness = 0.125;
-    const elasticPartCount = (walls.right - walls.left) / elasticPartWidth / 2;
-    const elasticLeft = -20, elasticTop = 5.0;
-    const strength = 10.0;
-    const anchorOffset = 1;
-    const whatisthis = 0;
-    let prevBody = table;
-    // const elastick
-
-    // korte stokjes
-    for (let i = 0; i < elasticPartCount; ++i) {
-        const body = world.createDynamicBody(Vec2(elasticLeft + elasticPartWidth / 2 + elasticPartWidth * i, elasticTop));
-        body.createFixture(pl.Box(0.5, 0.125), 20.0);
-
-        const anchor = Vec2(elasticLeft + elasticPartWidth * i, elasticTop);
-        world.createJoint(pl.WeldJoint({}, prevBody, body, anchor));
-
-        prevBody = body;
-    }
-
-    // for (let i = 0; i < elasticPartCount; ++i) {
-    //     const elasticPart = world.createBody({
-    //         type: 'dynamic',
-    //         density: 1,
-    //         position: Vec2(left + elasticPartWidth * (2 * i + anchorOffset), elasticBottom),
-    //     });
-    //     elasticPart.createFixture(pl.Box(elasticPartWidth, elasticPartThickness), strength);
-
-    //     const anchor = Vec2(elasticPartWidth * (2 * i + anchorOffset), whatisthis);
-    //     world.createJoint(pl.WeldJoint({
-    //         frequencyHz: 15.0,
-    //         dampingRatio: 0.9,
-    //     }, prevBody, elasticPart, anchor));
-
-    //     prevBody = elasticPart;
-    // }
-    // const anchor = Vec2(elasticPartWidth * (elasticPartCount - anchorOffset), whatisthis);
-    // world.createJoint(pl.WeldJoint({}, prevBody, table, anchor));
-
-    testbed.step = function () {
+    drawPuck = _ => {
+        puck.createFixture(pl.Circle(puckOptions.puckSize), puckOptions);
     };
+    drawPuck();
+
+    // Elastic
+    const elasticPart = {
+        width: 0.175,
+        thickness: 0.0625,
+        getLeft: i => {
+            return elastic.left + elasticPart.width * (i + 1);
+        }
+    };
+    const elastic = {
+        partCount: (walls.right - walls.left) / elasticPart.width - 1,
+        left: walls.left,
+        top: -10.0,
+    };
+    drawElastic = _ => {
+        let prevBody = table;
+        for (let i = 0; i < elastic.partCount; ++i) {
+            const body = world.createDynamicBody(Vec2(elasticPart.getLeft(i), elastic.top));
+            body.createFixture(pl.Box(elasticPart.width / 2, elasticPart.thickness), elastic.top);
+
+            const anchor = Vec2(elastic.left + elasticPart.width * i, elastic.top);
+            world.createJoint(pl.WeldJoint({}, prevBody, body, anchor));
+
+            prevBody = body;
+        }
+        const anchor = Vec2(elastic.left + elasticPart.width * elastic.partCount, elastic.top);
+        world.createJoint(pl.WeldJoint({}, prevBody, table, anchor));
+    };
+    drawElastic();
+
+    testbed.step = function () { };
 
     return world;
 });
