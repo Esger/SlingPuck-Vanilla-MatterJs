@@ -5,8 +5,8 @@
 
 planck.testbed('SlingPuck', function (testbed) {
 
-    testbed.speed = 10;
-    testbed.hz = 33;
+    testbed.speed = 40;
+    testbed.hz = 60;
 
     const pl = planck, Vec2 = pl.Vec2;
     const world = new pl.World({
@@ -23,10 +23,10 @@ planck.testbed('SlingPuck', function (testbed) {
     };
 
     const walls = {
-        top: 50,
-        right: 30,
-        bottom: -30,
-        left: -30,
+        top: 50.0,
+        right: 30.0,
+        bottom: -30.0,
+        left: -30.0,
         gateTop: 10.0,
         openingLeft: -5.0,
         openingRight: 5.0,
@@ -54,52 +54,78 @@ planck.testbed('SlingPuck', function (testbed) {
     });
 
     // Puck
-    const puckOptions = {
-        density: 0.1,
-        friction: 0.9,
-        puckSize: 3.0
+    const puckDef = {
+        density: 0.05,
+        friction: 0.3,
+        // restitution: 1,
+        puckSize: 3.125
     };
-    const tableFriction = 0.03;
-    const puck = world.createBody({
+    const puckBodyOptions = {
         type: 'dynamic',
         angularDamping: 5,
         // bullet: true,
         position: Vec2(1.0, 0.4),
-        linearDamping: tableFriction
-    });
+        linearDamping: 0.03
+    };
+    const puck = world.createBody(puckBodyOptions);
     drawPuck = _ => {
-        puck.createFixture(pl.Circle(puckOptions.puckSize), puckOptions);
+        puck.createFixture(pl.Circle(puckDef.puckSize), puckDef);
     };
     drawPuck();
 
     // Elastic
     const elasticPart = {
-        width: 1,
-        thickness: 0.125,
+        halfWidth: 0.5,
+        height: 0.25,
+        density: 20,
         getLeft: i => {
-            return elastic.left + elasticPart.width * (i + 1);
+            return elastic.left + (elasticPart.halfWidth) * (i + 0.5);
+            // return elastic.left + (elasticPart.width - elasticPart.height) * (i + 0.5);
+        },
+        getAnchorLeft: i => {
+            return elastic.left + elasticPart.halfWidth * (i + 1.0);
+        },
+        revoluteJointDef: {
+            // speed: 0,
+            // torque: 100
+            // joint speed to zero, and set the maximum torque to some small, but significant value.
+        },
+        prismaticJointDef: {
+            // collideConnected: false,
+            lowerTranslation: -0.1,
+            upperTranslation: 1,
+            enableLimit: true,
+            maxMotorTorque: 1.0,
+            motorSpeed: 0.0,
+            enableMotor: true
+        },
+        fixtureDef: {
+            density: 20.0,
+            friction: 1.0,
+            restitution: 0
         }
     };
     const elastic = {
-        partCount: (walls.right - walls.left) / elasticPart.width - 1,
+        partCount: (walls.right - walls.left) / elasticPart.halfWidth / 2.0,
         left: walls.left,
         top: -14.7,
     };
     drawElastic = _ => {
         let prevBody = table;
+        const jointTypeRatio = 3;
         for (let i = 0; i < elastic.partCount; ++i) {
-            const body = world.createDynamicBody(Vec2(elasticPart.getLeft(i), elastic.top));
-            body.createFixture(pl.Box(elasticPart.width / 2, elasticPart.thickness), elastic.top);
+            const body = world.createDynamicBody(Vec2(elastic.left + elasticPart.halfWidth + 1.0 * i, elastic.top));
+            body.createFixture(pl.Box(elasticPart.halfWidth, elasticPart.height), elasticPart.fixtureDef);
+            const anchor = Vec2(elastic.left + 1.0 * i, elastic.top);
+            if (i % jointTypeRatio == 0) {
+                world.createJoint(pl.PrismaticJoint(elasticPart.prismaticJointDef, prevBody, body, anchor));
+            } else {
+                world.createJoint(pl.WeldJoint({}, prevBody, body, anchor));
+            }
 
-            const anchor = Vec2(elastic.left + elasticPart.width * (i + 0.5), elastic.top);
-            world.createJoint(pl.DistanceJoint({
-                // frequencyHz: 10.0,
-                // dampingRatio: 0.9,
-            }, prevBody, body, anchor));
-            console.log(body.getMass());
             prevBody = body;
         }
-        const anchor = Vec2(elastic.left + elasticPart.width * elastic.partCount, elastic.top);
+        const anchor = Vec2(elastic.left + 1.0 * elastic.partCount, elastic.top);
         world.createJoint(pl.WeldJoint({}, prevBody, table, anchor));
     };
     drawElastic();
