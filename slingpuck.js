@@ -5,8 +5,8 @@
 
 planck.testbed('SlingPuck', function (testbed) {
 
-    testbed.speed = 40;
-    testbed.hz = 60;
+    testbed.speed = 100;
+    // testbed.hz = 3;
 
     const pl = planck, Vec2 = pl.Vec2;
     const world = new pl.World({
@@ -90,12 +90,16 @@ planck.testbed('SlingPuck', function (testbed) {
             // torque: 100
             // joint speed to zero, and set the maximum torque to some small, but significant value.
         },
+        weldJointDef: {
+            frequency: 0,
+            damping: 0
+        },
         prismaticJointDef: {
             // collideConnected: false,
-            lowerTranslation: -0.1,
-            upperTranslation: 1,
+            lowerTranslation: -0.05,
+            upperTranslation: 0.1,
             enableLimit: true,
-            maxMotorTorque: 1.0,
+            maxMotorTorque: 100.0,
             motorSpeed: 0.0,
             enableMotor: true
         },
@@ -112,7 +116,7 @@ planck.testbed('SlingPuck', function (testbed) {
     };
     drawElastic = _ => {
         let prevBody = table;
-        const jointTypeRatio = 3;
+        const jointTypeRatio = 2;
         for (let i = 0; i < elastic.partCount; ++i) {
             const body = world.createDynamicBody(Vec2(elastic.left + elasticPart.halfWidth + 1.0 * i, elastic.top));
             body.createFixture(pl.Box(elasticPart.halfWidth, elasticPart.height), elasticPart.fixtureDef);
@@ -120,7 +124,7 @@ planck.testbed('SlingPuck', function (testbed) {
             if (i % jointTypeRatio == 0) {
                 world.createJoint(pl.PrismaticJoint(elasticPart.prismaticJointDef, prevBody, body, anchor));
             } else {
-                world.createJoint(pl.WeldJoint({}, prevBody, body, anchor));
+                world.createJoint(pl.WeldJoint(elasticPart.weldJointDef, prevBody, body, anchor));
             }
 
             prevBody = body;
